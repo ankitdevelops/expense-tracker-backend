@@ -20,7 +20,11 @@ class Category(models.Model):
 class Expense(models.Model):
     title = models.CharField(max_length=255, blank=True, null=True)
     amount = models.CharField(max_length=20)
-    receipt = models.ImageField(upload_to="receipt/%Y/%m/")
+    receipt = models.ImageField(
+        upload_to="receipt/%Y/%m/",
+        blank=True,
+        null=True,
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
