@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "cloudinary",
     "api.apps.ApiConfig",
     "api.account.apps.AccountConfig",
+    "api.expense.apps.ExpenseConfig",
 ]
 
 MIDDLEWARE = [
@@ -125,7 +126,8 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 MEDIA_URL = "/media/"
-DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinarySto"
+MEDIA_ROOT = BASE_DIR / "media"
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
