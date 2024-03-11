@@ -1,9 +1,11 @@
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from .serializers import ExpenseInputSerializer, ExpenseOutputSerializer
 from .models import Category, Expense
 from api.utils import APIResponse
+from .permissions import IsOwner
 
 
 class ExpenseCreateApi(APIView):
@@ -45,7 +47,7 @@ class ExpenseCreateApi(APIView):
 
 
 class ExpenseUpdateApi(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsOwner, IsAuthenticated]
 
     def get_object(self, pk):
         try:
@@ -59,7 +61,6 @@ class ExpenseUpdateApi(APIView):
         try:
             expense = self.get_object(pk)
             serializer = ExpenseInputSerializer(data=request.data)
-            print(request.data)
             if serializer.is_valid():
                 category_id = request.data.get("category")
                 category = Category.objects.get(id=category_id)
@@ -67,6 +68,7 @@ class ExpenseUpdateApi(APIView):
                 expense.amount = expense_data["amount"]
                 expense.title = expense_data["title"]
                 expense.receipt = expense_data.get("receipt", expense.receipt)
+                self.check_object_permissions(request, expense)
                 expense.save()
 
                 res = ExpenseOutputSerializer(expense)
@@ -87,9 +89,45 @@ class ExpenseUpdateApi(APIView):
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
+        except PermissionDenied:
+            return APIResponse.error(
+                "you don't have permission to perform this action",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
         except Exception as e:
             print(e)
             return APIResponse.error(
                 str(e),
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class ExpenseDeleteApi(APIView):
+    permission_classes = [IsAuthenticated, IsOwner]
+
+    def post(self, request, pk):
+        try:
+            expense = Expense.objects.get(id=pk)
+            self.check_object_permissions(request, expense)
+
+            expense.delete()
+            return APIResponse.success(
+                "record deleted successfully",
+                data={},
+                status_code=status.HTTP_200_OK,
+            )
+        except Expense.DoesNotExist:
+            return APIResponse.error(
+                "expense not found", status_code=status.HTTP_400_BAD_REQUEST
+            )
+        except PermissionDenied:
+            return APIResponse.error(
+                "you don't have permission to perform this action",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        except Exception as e:
+            return APIResponse.error(
+                str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
