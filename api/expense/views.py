@@ -66,7 +66,7 @@ class ExpenseUpdateApi(APIView):
                 expense_data = serializer.validated_data
                 expense.amount = expense_data["amount"]
                 expense.title = expense_data["title"]
-                expense.receipt = expense_data["receipt"]
+                expense.receipt = expense_data.get("receipt", expense.receipt)
                 expense.save()
 
                 res = ExpenseOutputSerializer(expense)
@@ -88,6 +88,7 @@ class ExpenseUpdateApi(APIView):
             )
 
         except Exception as e:
+            print(e)
             return APIResponse.error(
                 str(e),
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
