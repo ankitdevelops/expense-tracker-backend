@@ -137,6 +137,12 @@ class ExpenseDeleteApi(APIView):
 
 class ExpenseListApi(APIView):
 
+    def calculate_total_expense(self, expenses):
+        total_expense_sum = 0
+        for expense in expenses:
+            total_expense_sum += float(expense.amount)
+        return round(total_expense_sum, 2)
+
     def get(self, request):
         current_date = datetime.now()
         current_month = current_date.month
@@ -154,10 +160,17 @@ class ExpenseListApi(APIView):
                 created_at__year=current_year,
                 category=category,
             )
-            res = ExpenseOutputSerializer(expense, many=True)
+
+            total_expense_sum = self.calculate_total_expense(expenses=expense)
+
+            expense_serializer = ExpenseOutputSerializer(expense, many=True)
+            res_data = {
+                "expenses": expense_serializer.data,
+                "total_expense": total_expense_sum,
+            }
             return APIResponse.success(
                 "record fetched successfully",
-                data=res.data,
+                data=res_data,
                 status_code=status.HTTP_200_OK,
             )
         except Expense.DoesNotExist:
