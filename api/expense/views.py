@@ -152,11 +152,6 @@ class ExpenseListApi(APIView):
         start_date_param = request.query_params.get("start_date")
         end_date_param = request.query_params.get("end_date")
         try:
-            # if not category_param:
-            #     raise ValidationError("Category parameter is required.")
-
-            category = Category.objects.get(id=category_param)
-
             expenses = Expense.objects.filter(
                 user=request.user,
             )
@@ -175,6 +170,9 @@ class ExpenseListApi(APIView):
                         end_date,
                     )
                 )
+            elif category_param:
+                category = Category.objects.get(id=category_param)
+                expenses = expenses.filter(category=category)
 
             else:
                 expenses = expenses.filter(
@@ -201,7 +199,7 @@ class ExpenseListApi(APIView):
         except ValidationError as ve:
             error_detail = ve.detail[0] if ve.detail else None
             error_message = (
-                str(error_detail) if error_detail else "Validation error occurred"
+                str(error_detail) if error_detail else "Validation error occured"
             )
             return APIResponse.error(
                 error_message,
