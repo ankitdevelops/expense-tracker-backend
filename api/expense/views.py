@@ -1,4 +1,5 @@
 from datetime import datetime
+from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -144,26 +145,46 @@ class ExpenseListApi(APIView):
         return round(total_expense_sum, 2)
 
     def get(self, request):
-        current_date = datetime.now()
+        current_date = timezone.now()
         current_month = current_date.month
         current_year = current_date.year
         category_param = request.query_params.get("category")
+        start_date_param = request.query_params.get("start_date")
+        end_date_param = request.query_params.get("end_date")
         try:
-            if not category_param:
-                raise ValidationError("Category parameter is required.")
+            # if not category_param:
+            #     raise ValidationError("Category parameter is required.")
 
             category = Category.objects.get(id=category_param)
 
-            expense = Expense.objects.filter(
+            expenses = Expense.objects.filter(
                 user=request.user,
-                created_at__month=current_month,
-                created_at__year=current_year,
-                category=category,
             )
 
-            total_expense_sum = self.calculate_total_expense(expenses=expense)
+            if start_date_param and end_date_param:
+                start_date = timezone.make_aware(
+                    datetime.strptime(start_date_param, "%Y-%m-%d")
+                )
 
-            expense_serializer = ExpenseOutputSerializer(expense, many=True)
+                end_date = timezone.make_aware(
+                    datetime.strptime(end_date_param, "%Y-%m-%d")
+                )
+                expenses = expenses.filter(
+                    created_at__range=(
+                        start_date,
+                        end_date,
+                    )
+                )
+
+            else:
+                expenses = expenses.filter(
+                    created_at__month=current_month,
+                    created_at__year=current_year,
+                )
+
+            total_expense_sum = self.calculate_total_expense(expenses=expenses)
+
+            expense_serializer = ExpenseOutputSerializer(expenses, many=True)
             res_data = {
                 "expenses": expense_serializer.data,
                 "total_expense": total_expense_sum,
