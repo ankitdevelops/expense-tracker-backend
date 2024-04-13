@@ -213,3 +213,38 @@ class ExpenseListApi(APIView):
             return APIResponse.error(
                 str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class CurrentMonthTotalApi(APIView):
+
+    def calculate_total_expense(self, expenses):
+        total_expense_sum = 0
+        for expense in expenses:
+            total_expense_sum += float(expense.amount)
+        return round(total_expense_sum, 2)
+
+    def get(self, request):
+        current_date = timezone.now()
+        current_month = current_date.month
+        current_year = current_date.year
+        current_user = request.user
+
+        try:
+            expenses = Expense.objects.filter(
+                created_at__month=current_month,
+                created_at__year=current_year,
+                user=current_user,
+            )
+            total_expense_sum = self.calculate_total_expense(expenses=expenses)
+            res_data = {
+                "total_expense": total_expense_sum,
+            }
+            return APIResponse.success(
+                "record fetched successfully",
+                data=res_data,
+                status_code=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return APIResponse.error(
+                str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
