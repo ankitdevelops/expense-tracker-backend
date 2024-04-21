@@ -1,3 +1,4 @@
+from django.core.mail import BadHeaderError, send_mail
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -23,3 +24,20 @@ class APIResponse:
             response_data["data"] = data
 
         return Response(response_data, status=status_code)
+
+
+def send_email(subject, message, to_email, from_email="test@expence.com"):
+    subject = subject
+    message = message
+    from_email = from_email
+    if subject and message and to_email:
+        try:
+            send_mail(subject, message, from_email, to_email)
+            return True
+        except BadHeaderError:
+            return False
+        except Exception as e:
+            print(f"failed to send email to {to_email} /n Error: {str(e)}")
+            return False
+    else:
+        return False

@@ -1,9 +1,11 @@
+import random
 from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
     PermissionsMixin,
 )
+from django.utils import timezone
 
 
 class MyAccountManager(BaseUserManager):
@@ -66,3 +68,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.full_name}"
+
+    def generate_otp(self, *args, **kwargs):
+        """generate random 6 digit otp
+        Returns:
+            int: 6 digit otp
+        """
+        self.otp = random.randint(100000, 999999)
+        self.otp_created_time = timezone.now()
+        super().save(*args, **kwargs)

@@ -56,7 +56,7 @@ class ExpenseUpdateApi(APIView):
         try:
             return Expense.objects.get(pk=pk)
         except Expense.DoesNotExist:
-            raise APIResponse.error(
+            return APIResponse.error(
                 "record not found", status_code=status.HTTP_404_NOT_FOUND
             )
 
