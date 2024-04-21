@@ -27,3 +27,21 @@ class UserOtpValidateSerializer(serializers.Serializer):
 
 class RegenerateOtpSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
+
+class SetPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(
+        min_length=10, max_length=20, allow_blank=False, trim_whitespace=True
+    )
+    confirm_password = serializers.CharField(
+        min_length=10, max_length=20, allow_blank=False, trim_whitespace=True
+    )
+
+    def validate(self, data):
+        password = data.get("password")
+        confirm_password = data.get("confirm_password")
+
+        if password != confirm_password:
+            raise serializers.ValidationError("Passwords do not match")
+
+        return data

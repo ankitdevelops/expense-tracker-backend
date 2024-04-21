@@ -2,11 +2,14 @@ from datetime import timedelta
 from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import (
     UserRegisterInputSerializer,
     UserOtpValidateSerializer,
     RegenerateOtpSerializer,
+    SetPasswordSerializer,
 )
 from .models import User
 from api.utils import send_email, APIResponse
@@ -154,7 +157,43 @@ class RegenerateOtpApi(APIView):
                         "error while sending otp",
                         status_code=status.HTTP_400_BAD_REQUEST,
                     )
+            else:
+                return APIResponse.error(
+                    "validation error",
+                    data=serializer.errors,
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+        except Exception as e:
+            print(e)
+            return APIResponse.error(
+                "Failed to validate the otp, please try again after sometime",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
 
+
+class SetPasswordApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            serializer = SetPasswordSerializer(data=request.data)
+            if serializer.is_valid():
+                password = serializer.validated_data["password"]
+                # confirm_password = serializer.validated_data["confirm_password"]
+                user = request.user
+                user.set_password(password)
+                user.save()
+                return APIResponse.success(
+                    "password set successfully",
+                    data={},
+                    status_code=status.HTTP_201_CREATED,
+                )
+            else:
+                return APIResponse.error(
+                    "validation error",
+                    data=serializer.errors,
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
         except Exception as e:
             print(e)
             return APIResponse.error(
