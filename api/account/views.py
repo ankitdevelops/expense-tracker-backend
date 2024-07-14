@@ -32,7 +32,6 @@ class UserCreateApi(APIView):
                 user.generate_otp()
                 user.save()
                 otp = user.otp
-                print(user)
                 email_status = send_email(
                     "Otp",
                     f"Please dont share your otp with any other \n \n {otp}",

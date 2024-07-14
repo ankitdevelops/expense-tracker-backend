@@ -26,7 +26,7 @@ class APIResponse:
         return Response(response_data, status=status_code)
 
 
-def send_email(subject, message, to_email, from_email="test@expence.com"):
+def send_email(subject, message, to_email, from_email="hiankitkr@gmail.com"):
     subject = subject
     message = message
     from_email = from_email
