@@ -5,7 +5,7 @@ from django.conf import settings
 class Category(models.Model):
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=500)
-    icon = models.ImageField(upload_to="category/icon/")
+    icon = models.ImageField(upload_to="category/icon/", blank=True, null=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
