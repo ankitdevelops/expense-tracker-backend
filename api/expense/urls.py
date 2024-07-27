@@ -5,6 +5,10 @@ from .views import (
     ExpenseDeleteApi,
     ExpenseListApi,
     CurrentMonthTotalApi,
+    CategoryListApi,
+    CategoryCreateApi,
+    CategoryUpdateApi,
+    CategoryDeleteApi,
 )
 
 urlpatterns = [
@@ -24,5 +28,13 @@ urlpatterns = [
         "<int:pk>/delete/",
         ExpenseDeleteApi.as_view(),
         name="delete_expense",
+    ),
+    path("category/list", CategoryListApi.as_view(), name="category-list"),
+    path("category/create", CategoryCreateApi.as_view(), name="category-create"),
+    path(
+        "category/update/<int:pk>", CategoryUpdateApi.as_view(), name="category-update"
+    ),
+    path(
+        "category/delete/<int:pk>", CategoryDeleteApi.as_view(), name="category-delete"
     ),
 ]

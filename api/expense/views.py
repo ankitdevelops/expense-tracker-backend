@@ -1,14 +1,21 @@
 from datetime import datetime
 from django.utils import timezone
+from django.db.models import Q
+from django.utils.text import slugify
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.exceptions import ValidationError
-from .serializers import ExpenseInputSerializer, ExpenseOutputSerializer
+from .serializers import (
+    ExpenseInputSerializer,
+    ExpenseOutputSerializer,
+    CategorySerializer,
+    CategoryInputSerializer,
+)
 from .models import Category, Expense
 from api.utils import APIResponse
-from .permissions import IsOwner
+from .permissions import IsOwner, IsCategoryOwner
 
 
 class ExpenseCreateApi(APIView):
@@ -244,6 +251,127 @@ class CurrentMonthTotalApi(APIView):
                 data=res_data,
                 status_code=status.HTTP_200_OK,
             )
+        except Exception as e:
+            return APIResponse.error(
+                str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class CategoryListApi(APIView):
+
+    def get(self, request):
+        current_user = request.user
+        category_id = request.query_params.get("category_id")
+        try:
+            categories = Category.objects.filter(
+                Q(created_by__role="1") | Q(created_by=current_user)
+            )
+            if len(categories) < 1:
+                return APIResponse.error(
+                    "record not found", status_code=status.HTTP_404_NOT_FOUND
+                )
+            category_serializer = CategorySerializer(categories, many=True)
+            return APIResponse.success(
+                "record fetched successfully",
+                data=category_serializer.data,
+                status_code=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return APIResponse.error(
+                str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class CategoryCreateApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            serializer = CategoryInputSerializer(data=request.data)
+            if serializer.is_valid():
+                current_user = request.user
+                category_name = request.data.get("title")
+                category_name_slug = slugify(category_name)
+                category = Category.objects.filter(
+                    created_by=current_user, slug=category_name_slug
+                )
+                if len(category) > 1:
+                    return APIResponse.error(
+                        "record with this category already exits.",
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                    )
+                validated_category_data = serializer.validated_data
+                validated_category_data["created_by"] = current_user
+                new_category = Category.objects.create(**validated_category_data)
+                res = CategorySerializer(new_category)
+                return APIResponse.success(
+                    "record created successfully",
+                    data=res.data,
+                    status_code=status.HTTP_200_OK,
+                )
+            else:
+                return APIResponse.error(
+                    "validation error",
+                    data=serializer.errors,
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+        except Exception as e:
+            print(e)
+            return APIResponse.error(
+                str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class CategoryUpdateApi(APIView):
+    permission_classes = [IsAuthenticated, IsCategoryOwner]
+
+    def post(self, request, pk):
+        try:
+            category = Category.objects.get(id=pk)
+            serializer = CategoryInputSerializer(data=request.data)
+            if serializer.is_valid():
+                validated_data = serializer.validated_data
+                title_slug = slugify(validated_data.get("title"))
+                category.title = validated_data.get("title")
+                category.slug = title_slug
+                category.icon = validated_data.get("icon")
+                self.check_object_permissions(request, category)
+                category.save()
+                res = CategorySerializer(category)
+                return APIResponse.success(
+                    "Record updated successfully",
+                    data=res.data,
+                    status_code=status.HTTP_200_OK,
+                )
+            else:
+                return APIResponse.error(
+                    "validation error",
+                    data=serializer.errors,
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+        except Category.DoesNotExist:
+            return APIResponse.error("record not found", status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return APIResponse.error(
+                str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class CategoryDeleteApi(APIView):
+
+    permission_classes = [IsAuthenticated, IsCategoryOwner]
+
+    def delete(self, request, pk):
+        try:
+            category = Category.objects.get(id=pk)
+            self.check_object_permissions(request, category)
+            category.delete()
+            return APIResponse.success(
+                "Record deleted successfully",
+                status_code=status.HTTP_204_NO_CONTENT,
+            )
+        except Category.DoesNotExist:
+            return APIResponse.error("record not found", status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return APIResponse.error(
                 str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR

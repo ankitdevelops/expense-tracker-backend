@@ -8,6 +8,11 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class CategoryInputSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255, allow_blank=False)
+    icon = serializers.ImageField(allow_empty_file=True, required=False)
+
+
 class ExpenseInputSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=255, allow_blank=True)
     amount = serializers.CharField(max_length=20)
